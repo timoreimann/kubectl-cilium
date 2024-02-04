@@ -15,6 +15,8 @@
 package pod
 
 import (
+	"context"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/kubernetes"
@@ -23,7 +25,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-func Exec(client kubernetes.Interface, config *restclient.Config, streams genericclioptions.IOStreams, podNamespace, podName, containerName string, stdin bool, tty bool, command ...string) error {
+func Exec(ctx context.Context, client kubernetes.Interface, config *restclient.Config, streams genericclioptions.IOStreams, podNamespace, podName, containerName string, stdin, tty bool, command ...string) error {
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Namespace(podNamespace).Name(podName).SubResource("exec")
 	opt := &v1.PodExecOptions{
 		Command:   command,
@@ -41,7 +43,7 @@ func Exec(client kubernetes.Interface, config *restclient.Config, streams generi
 	if err != nil {
 		return err
 	}
-	return exec.Stream(remotecommand.StreamOptions{
+	return exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:  streams.In,
 		Stdout: streams.Out,
 		Stderr: streams.ErrOut,

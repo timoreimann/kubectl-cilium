@@ -86,5 +86,5 @@ func exec(ctx context.Context, target string, command ...string) error {
 	if err != nil {
 		return err
 	}
-	return nodeutils.Exec(kubeClient, kubeConfig, streams, ns, pn, constants.CiliumAgentContainerName, true, true, command...)
+	return nodeutils.Exec(ctx, kubeClient, kubeConfig, streams, ns, pn, constants.CiliumAgentContainerName, true, true, command...)
 }
