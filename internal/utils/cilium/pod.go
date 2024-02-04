@@ -15,15 +15,17 @@
 package cilium
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/bmcustodio/kubectl-cilium/internal/constants"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/bmcustodio/kubectl-cilium/internal/constants"
 )
 
-func DiscoverCiliumPodInNode(kubeClient kubernetes.Interface, ciliumNamespace, nodeName string) (string, error) {
-	p, err := kubeClient.CoreV1().Pods(ciliumNamespace).List(metav1.ListOptions{
+func DiscoverCiliumPodInNode(ctx context.Context, kubeClient kubernetes.Interface, ciliumNamespace, nodeName string) (string, error) {
+	p, err := kubeClient.CoreV1().Pods(ciliumNamespace).List(ctx, metav1.ListOptions{
 		FieldSelector: fmt.Sprintf("spec.nodeName==%s", nodeName),
 		LabelSelector: constants.CiliumLabelSelector,
 		Limit:         1,

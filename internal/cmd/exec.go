@@ -15,13 +15,15 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/spf13/cobra"
+	"k8s.io/client-go/tools/cache"
 
 	"github.com/bmcustodio/kubectl-cilium/internal/constants"
 	ciliumutils "github.com/bmcustodio/kubectl-cilium/internal/utils/cilium"
 	nodeutils "github.com/bmcustodio/kubectl-cilium/internal/utils/kubernetes"
-	"github.com/spf13/cobra"
-	"k8s.io/client-go/tools/cache"
 )
 
 func init() {
@@ -41,13 +43,15 @@ var execCmd = &cobra.Command{
 		default:
 			command = args[1:]
 		}
-		return exec(args[0], command...)
+
+		ctx := context.TODO()
+		return exec(ctx, args[0], command...)
 	},
 }
 
-func exec(target string, command ...string) error {
+func exec(ctx context.Context, target string, command ...string) error {
 	// Start by attempting to discover the namespace in which Cilium is installed.
-	ns, err := ciliumutils.DiscoverCiliumNamespace(kubeClient)
+	ns, err := ciliumutils.DiscoverCiliumNamespace(ctx, kubeClient)
 	if err != nil {
 		return err
 	}
@@ -63,14 +67,14 @@ func exec(target string, command ...string) error {
 		nn = tn
 	default:
 		// Lookup the name of the node where the pod referenced by 'target' is running.
-		v, err := nodeutils.GetNodeNameFromPod(kubeClient, tns, tn)
+		v, err := nodeutils.GetNodeNameFromPod(ctx, kubeClient, tns, tn)
 		if err != nil {
 			return err
 		}
 		nn = v
 	}
 	// Double-check whether the targeted node exists.
-	ne, err := nodeutils.NodeExists(kubeClient, nn)
+	ne, err := nodeutils.NodeExists(ctx, kubeClient, nn)
 	if err != nil {
 		return err
 	}
@@ -78,7 +82,7 @@ func exec(target string, command ...string) error {
 		return fmt.Errorf("node with name %q does not exist", nn)
 	}
 	// Try to get the name of the Cilium pod running in the targeted node.
-	pn, err := ciliumutils.DiscoverCiliumPodInNode(kubeClient, ns, nn)
+	pn, err := ciliumutils.DiscoverCiliumPodInNode(ctx, kubeClient, ns, nn)
 	if err != nil {
 		return err
 	}

@@ -15,15 +15,16 @@
 package pod
 
 import (
+	"context"
 	"fmt"
 
-	errors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func GetNodeNameFromPod(kubeClient kubernetes.Interface, namespace, name string) (string, error) {
-	n, err := kubeClient.CoreV1().Pods(namespace).Get(name, metav1.GetOptions{})
+func GetNodeNameFromPod(ctx context.Context, kubeClient kubernetes.Interface, namespace, name string) (string, error) {
+	n, err := kubeClient.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			return "", fmt.Errorf("pod %q does not exist in namespace %q", name, namespace)
