@@ -15,15 +15,16 @@
 package pod
 
 import (
+	"context"
 	"fmt"
 
-	errors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func NodeExists(kubeClient kubernetes.Interface, name string) (bool, error) {
-	_, err := kubeClient.CoreV1().Nodes().Get(name, metav1.GetOptions{})
+func NodeExists(ctx context.Context, kubeClient kubernetes.Interface, name string) (bool, error) {
+	_, err := kubeClient.CoreV1().Nodes().Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		if !errors.IsNotFound(err) {
 			return false, fmt.Errorf("failed to get node %q: %v", name, err)

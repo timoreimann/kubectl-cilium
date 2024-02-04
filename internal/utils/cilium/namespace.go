@@ -15,16 +15,18 @@
 package cilium
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/bmcustodio/kubectl-cilium/internal/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"github.com/bmcustodio/kubectl-cilium/internal/constants"
 )
 
-func DiscoverCiliumNamespace(kubeClient kubernetes.Interface) (string, error) {
-	pp, err := kubeClient.CoreV1().Pods(corev1.NamespaceAll).List(metav1.ListOptions{
+func DiscoverCiliumNamespace(ctx context.Context, kubeClient kubernetes.Interface) (string, error) {
+	pp, err := kubeClient.CoreV1().Pods(corev1.NamespaceAll).List(ctx, metav1.ListOptions{
 		LabelSelector: constants.CiliumLabelSelector,
 		Limit:         1,
 	})
