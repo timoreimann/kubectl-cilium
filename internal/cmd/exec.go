@@ -21,9 +21,9 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/bmcustodio/kubectl-cilium/internal/constants"
-	ciliumutils "github.com/bmcustodio/kubectl-cilium/internal/utils/cilium"
-	nodeutils "github.com/bmcustodio/kubectl-cilium/internal/utils/kubernetes"
+	"github.com/timoreimann/kubectl-cilium/internal/constants"
+	ciliumutils "github.com/timoreimann/kubectl-cilium/internal/utils/cilium"
+	nodeutils "github.com/timoreimann/kubectl-cilium/internal/utils/kubernetes"
 )
 
 func init() {

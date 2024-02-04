@@ -1,4 +1,4 @@
-module github.com/bmcustodio/kubectl-cilium
+module github.com/timoreimann/kubectl-cilium
 
 go 1.21
 

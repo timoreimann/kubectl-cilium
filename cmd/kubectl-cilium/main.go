@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/bmcustodio/kubectl-cilium/internal/cmd"
+	"github.com/timoreimann/kubectl-cilium/internal/cmd"
 )
 
 func main() {

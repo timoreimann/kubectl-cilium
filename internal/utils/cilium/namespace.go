@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/bmcustodio/kubectl-cilium/internal/constants"
+	"github.com/timoreimann/kubectl-cilium/internal/constants"
 )
 
 func DiscoverCiliumNamespace(ctx context.Context, kubeClient kubernetes.Interface) (string, error) {
