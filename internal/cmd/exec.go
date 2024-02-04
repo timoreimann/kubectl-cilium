@@ -17,9 +17,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
-	"k8s.io/client-go/tools/cache"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/timoreimann/kubectl-cilium/internal/constants"
 	ciliumutils "github.com/timoreimann/kubectl-cilium/internal/utils/cilium"
@@ -33,8 +35,15 @@ func init() {
 var execCmd = &cobra.Command{
 	Args:                  cobra.MinimumNArgs(1),
 	DisableFlagsInUseLine: true,
-	Short:                 "Execute a command in a particular Cilium agent (default: '/bin/bash').",
-	Use:                   "exec (NODE|NAMESPACE/NAME) [COMMAND [args...]]",
+	Use:                   "exec [pod/]<pod>|[node/]<node> [<command> [args...]]",
+	Short:                 "Execute a command in a particular Cilium agent",
+	Long: `Execute a command in a Cilium agent managing the given node or pod.
+
+Whether a pod or node is referenced by the given name is auto-discovered. A particular type can be enforced by prefixing the resource name with a slash delimiter. Both singular and plural resource name variations are supported.
+
+If no namespace is specified or defined in the kube context, "default" is used.
+
+The default exec command is "/bin/bash".`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var command []string
 		switch len(args) {
@@ -51,40 +60,64 @@ var execCmd = &cobra.Command{
 
 func exec(ctx context.Context, target string, command ...string) error {
 	// Start by attempting to discover the namespace in which Cilium is installed.
-	ns, err := ciliumutils.DiscoverCiliumNamespace(ctx, kubeClient)
+	ciliumNamespace, err := ciliumutils.DiscoverCiliumNamespace(ctx, kubeClient)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to discover Cilium namespace: %s", err)
 	}
-	// Try to understand if 'target' is the name of a node or a '<namespace>/<name>' key targeting a pod.
-	tns, tn, err := cache.SplitMetaNamespaceKey(target)
-	if err != nil {
-		return fmt.Errorf("failed to parse %q as a target: %v", target, err)
+
+	var resource, objName string
+	targetParts := strings.SplitN(target, "/", 2)
+	switch len(targetParts) {
+	case 1:
+		objName = targetParts[0]
+	case 2:
+		resource = targetParts[0]
+		objName = targetParts[1]
 	}
-	var nn string
-	switch {
-	case tns == "":
-		// Assume that 'target' is the name of a node.
-		nn = tn
+
+	checkNode := true
+	checkPod := true
+	switch resource {
+	case "node", "nodes":
+		checkPod = false
+	case "pod", "pods":
+		checkNode = false
 	default:
-		// Lookup the name of the node where the pod referenced by 'target' is running.
-		v, err := nodeutils.GetNodeNameFromPod(ctx, kubeClient, tns, tn)
-		if err != nil {
-			return err
+		if resource != "" {
+			return fmt.Errorf("unsupported resource %q", resource)
 		}
-		nn = v
 	}
-	// Double-check whether the targeted node exists.
-	ne, err := nodeutils.NodeExists(ctx, kubeClient, nn)
-	if err != nil {
-		return err
+
+	var nodeName string
+	namespace := specifiedNamespace
+
+	if checkPod {
+		nodeName, err = nodeutils.GetNodeNameForPod(ctx, kubeClient, namespace, objName)
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				return fmt.Errorf("failed to get node name for pod %s/%s: %s", namespace, objName, err)
+			}
+		}
 	}
-	if !ne {
-		return fmt.Errorf("node with name %q does not exist", nn)
+
+	if nodeName == "" && checkNode {
+		node, err := kubeClient.CoreV1().Nodes().Get(ctx, objName, metav1.GetOptions{})
+		switch {
+		case err == nil:
+			nodeName = node.Name
+		case !errors.IsNotFound(err):
+			return fmt.Errorf("failed to get node %s: %s", objName, err)
+		}
 	}
+
+	if nodeName == "" {
+		return fmt.Errorf("failed to find node name for target %s (namespace %s)", target, namespace)
+	}
+
 	// Try to get the name of the Cilium pod running in the targeted node.
-	pn, err := ciliumutils.DiscoverCiliumPodInNode(ctx, kubeClient, ns, nn)
+	pn, err := ciliumutils.DiscoverCiliumPodInNode(ctx, kubeClient, ciliumNamespace, nodeName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to discover Cilium pod in namespace %s for node %s: %s", ciliumNamespace, nodeName, err)
 	}
-	return nodeutils.Exec(ctx, kubeClient, kubeConfig, streams, ns, pn, constants.CiliumAgentContainerName, true, true, command...)
+	return nodeutils.Exec(ctx, kubeClient, kubeConfig, streams, ciliumNamespace, pn, constants.CiliumAgentContainerName, true, true, command...)
 }
