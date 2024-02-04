@@ -1,3 +1,2 @@
-/.idea/
-/bin/
-/dist/
+bin/
+cmd/kubectl-cilium/kubectl-cilium
