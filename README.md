@@ -22,7 +22,8 @@ and copying `./bin/kubectl-cilium` to a directory in your `$PATH`.
 
 ### `kubectl-cilium exec`
 
-The `exec` command allows you to execute a command on a Cilium agent targeted by either a node name or a `namespace/name` key targeting any pod in the cluster.
+The `exec` command allows you to execute a command on a Cilium agent targeted by either a node or pod name.
+
 For example, assuming that your Kubernetes cluster has nodes
 
 ```shell
@@ -60,13 +61,13 @@ local-path-storage   local-path-provisioner-7745554f7f-9mmr8                    
 running
 
 ```shell
-$ kubectl-cilium exec local-path-storage/local-path-provisioner-7745554f7f-9mmr8 cilium monitor
+$ kubectl-cilium exec -n local-path-storage local-path-provisioner-7745554f7f-9mmr8 cilium monitor
 ```
 
 will start monitoring all Cilium-managed traffic in node `kind-cilium-mesh-2-control-plane`:
 
 ```shell
-$ kubectl-cilium exec local-path-storage/local-path-provisioner-7745554f7f-9mmr8 cilium monitor
+$ kubectl-cilium exec -n local-path-storage local-path-provisioner-7745554f7f-9mmr8 cilium monitor
 Listening for events on 4 CPUs with 64x4096 of shared memory
 Press Ctrl-C to quit
 level=info msg="Initializing dissection cache..." subsys=monitor
@@ -80,7 +81,7 @@ level=info msg="Initializing dissection cache..." subsys=monitor
 If no command is specified, `/bin/bash` is used by default:
 
 ```shell
-$ kubectl-cilium exec local-path-storage/local-path-provisioner-7745554f7f-9mmr8
+$ kubectl-cilium exec -n local-path-storage local-path-provisioner-7745554f7f-9mmr8
 root@kind-cilium-mesh-2-control-plane:~#
 ```
 

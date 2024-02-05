@@ -16,6 +16,7 @@ package cilium
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,10 +32,10 @@ func DiscoverCiliumPodInNode(ctx context.Context, kubeClient kubernetes.Interfac
 		Limit:         1,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to discover Cilium pod in node %q: %v", nodeName, err)
+		return "", fmt.Errorf("failed to list Cilium pods: %s", err)
 	}
 	if len(p.Items) == 0 {
-		return "", fmt.Errorf("no Cilium pod is running on node %q", nodeName)
+		return "", errors.New("no Cilium pod is running on node")
 	}
 	return p.Items[0].Name, nil
 }

@@ -33,10 +33,11 @@ func init() {
 }
 
 var (
-	configFlags *genericclioptions.ConfigFlags
-	kubeClient  kubernetes.Interface
-	kubeConfig  *rest.Config
-	streams     genericclioptions.IOStreams
+	configFlags        *genericclioptions.ConfigFlags
+	specifiedNamespace string
+	kubeClient         kubernetes.Interface
+	kubeConfig         *rest.Config
+	streams            genericclioptions.IOStreams
 )
 
 var rootCmd = &cobra.Command{
@@ -46,8 +47,14 @@ var rootCmd = &cobra.Command{
 	SilenceUsage: true,
 	Short:        "A kubectl plugin for interacting with Cilium.",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		clientConfig := configFlags.ToRawKubeConfigLoader()
+
 		var err error
-		kubeConfig, err = configFlags.ToRESTConfig()
+		specifiedNamespace, _, err = clientConfig.Namespace()
+		if err != nil {
+			return err
+		}
+		kubeConfig, err = clientConfig.ClientConfig()
 		if err != nil {
 			return err
 		}

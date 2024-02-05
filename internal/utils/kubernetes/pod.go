@@ -16,23 +16,22 @@ package pod
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func GetNodeNameFromPod(ctx context.Context, kubeClient kubernetes.Interface, namespace, name string) (string, error) {
+func GetNodeNameForPod(ctx context.Context, kubeClient kubernetes.Interface, namespace, name string) (string, error) {
 	n, err := kubeClient.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
-		if errors.IsNotFound(err) {
-			return "", fmt.Errorf("pod %q does not exist in namespace %q", name, namespace)
-		}
-		return "", nil
+		return "", fmt.Errorf("failed to get pod: %w", err)
 	}
+
 	if n.Spec.NodeName == "" {
-		return "", fmt.Errorf("pod %q in namespace %q hasn't been assigned to a node", name, namespace)
+		return "", errors.New("pod has not been assigned to any node")
 	}
+
 	return n.Spec.NodeName, nil
 }
