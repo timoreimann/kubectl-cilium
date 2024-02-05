@@ -9,7 +9,7 @@ on:
 
 jobs:
 
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -18,6 +18,14 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version-file: go.mod
+
+    - name: Check gomod consistency
+      run: |
+        make gomod
+        if ! git diff --exit-code; then
+          echo "go module is not consistent: run make gomod and commit results" >&2
+          exit 1
+        fi
 
     - name: Lint & build
       run: make ci
